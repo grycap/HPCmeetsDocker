@@ -1,0 +1,23 @@
+#!/bin/bash
+HMD_MAXNODES=100
+HMD_SERVERNAME=$(hostname)
+HMD_NODEBASENAME="${HMD_SERVERNAME}-node"
+
+# Set a fake list of nodes
+for i in `seq 1 $HMD_MAXNODES`; do
+	item="${HMD_NODEBASENAME}${i}";
+        grep -q "\<${item}\>" /etc/hosts || echo "127.0.0.1 ${item}.localdomain ${item}" >> /etc/hosts;
+done
+echo "127.0.0.1 $(hostname)" >> /etc/hosts
+
+# Basic configuration of the computing nodes
+cat >> /usr/local/etc/slurm.conf << EOF
+MpiDefault=pmi2
+ControlMachine=${HMD_SERVERNAME} 
+NodeName=${HMD_NODEBASENAME}[1-$HMD_MAXNODES] CPUs=1 State=UNKNOWN
+PartitionName=debug Nodes=${HMD_NODEBASENAME}[1-$HMD_MAXNODES] Default=YES MaxTime=INFINITE State=UP
+EOF
+
+# Ensure that slurm is on and that it reads the configuration
+pgrep slurmctld || nohup /usr/local/sbin/slurmctld > /dev/null 2>&1 &
+scontrol reconfig

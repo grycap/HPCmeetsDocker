@@ -1,0 +1,30 @@
+#!/bin/bash
+set -v
+set -e
+
+apt-get install -y munge
+/usr/sbin/create-munge-key < /dev/null
+chown munge:munge /etc/munge/munge.key
+chmod 0400 /etc/munge/munge.key
+chmod 0700 /var/log/munge
+chmod 0755 /var/log
+apt-get install -y munge
+
+# Fix MUNGE boot
+cat > /etc/init.d/mungefix << EOF
+#!/bin/sh
+###############################################################################
+### BEGIN INIT INFO
+# Provides:       mungefix
+# Required-Start: munge
+# Default-Start:  2 3 4 5
+# Short-Description:    Fixes Start of the MUNGE authentication service
+# Description:    The default installation of MUNGE makes it unusable because the permissions in /var/log are considered insecure. This script changes the permissions and restarts munge
+### END INIT INFO
+###############################################################################
+
+chmod 755 /var/log
+/etc/init.d/munge start
+EOF
+chmod +x /etc/init.d/mungefix
+update-rc.d mungefix defaults

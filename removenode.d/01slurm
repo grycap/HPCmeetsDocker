@@ -1,0 +1,14 @@
+#!/bin/bash
+CONTAINERNAME="$1"
+IPADDR="$2"
+shift
+shift
+while [ $# -gt 0 ]; do
+        NODENAME="$1"
+        shift
+        scontrol update NodeName=$NODENAME state=down reason="powered off by HPCmeetsDocker"
+        if (($?==0)); then
+                exit 0
+        fi
+done
+exit 1

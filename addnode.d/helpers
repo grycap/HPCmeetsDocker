@@ -1,0 +1,25 @@
+#!/bin/bash
+function retry_execute_command {
+    #
+    # $ Usage: retry_execute_command <max retries> <delay between retries> <commandline>
+    #
+    # Executes the commandline until it succedes (returns 0) or the maximum number of retries has been reached
+    #
+    local n=1
+    local max=$1
+    local delay=$2
+    shift
+    shift
+    while true; do
+        if $@; then
+            return $?
+        else
+            if [[ $n -lt $max ]]; then
+                ((n++))
+                sleep $delay;
+            else
+                return -1
+            fi
+        fi
+    done
+}

@@ -1,0 +1,21 @@
+#!/bin/bash
+source $(dirname $0)/helpers
+CONTAINERNAME="$1"
+IPADDR="$2"
+shift
+shift
+NODENAME="$1"
+shift
+NODENAMES="$@"
+
+set -v
+
+# Retry because the boot of ssh may be delayed
+retry_execute_command 3 5 scp /usr/local/etc/slurm.conf root@$NODENAME:/usr/local/etc/slurm.conf
+
+# Now ssh is active. But this MUST return 0 because sometimes scontrol fails because of the state (but it is a false failure... it is properly working)
+# if not returned 0, the -e would fail
+ssh root@$NODENAME bash -c 'pgrep slurmd 2> /dev/null || slurmd
+scontrol reconfig
+scontrol update NodeName=$(hostname) State=RESUME
+exit 0'

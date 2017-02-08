@@ -1,0 +1,19 @@
+#!/bin/bash
+source $(dirname $0)/helpers
+CONTAINERNAME="$1"
+IPADDR="$2"
+shift
+shift
+NODENAME="$1"
+shift
+NODENAMES="$@"
+
+set -e
+set -v
+
+# Retry because the boot of ssh may be delayed
+retry_execute_command 3 5 scp /etc/munge/munge.key root@$NODENAME:/etc/munge/munge.key
+
+# Now ssh is active
+ssh root@$NODENAME service munge restart
+exit 0

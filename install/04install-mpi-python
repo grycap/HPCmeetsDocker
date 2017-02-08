@@ -1,0 +1,5 @@
+#!/bin/bash
+apt-get install -y openssh-client openssh-server python python-pip
+apt-get install -y mpich
+# apt-get install -y openmpi-bin libopenmpi-dev
+pip install --upgrade pip mpi4py
