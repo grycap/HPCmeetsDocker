@@ -34,7 +34,9 @@ lxc publish HPCmD local: --alias HPCmD:0.1
 
 # Using with MCC
 
-I create a profile for mcc and I make it privileged for my purposes
+[MCC](https://github.com/grycap/mcc) is a tool that automates the process of creating virtual clusters whose nodes are containers. At this point, it is based on LXD. In order to test _HPCmeetsDocker_, we suggest to create a virtual cluster with _MCC_ prior to use it in production. Let's proceed.
+
+In first place, we create a profile for mcc and I make it privileged for my purposes
 
 ```bash
 lxc profile create HPCmD
@@ -62,15 +64,23 @@ devices:
 EOF
 ```
 
-And then I use to launch the cluster using [MCC](https://github.com/grycap/mcc).
+And then we use the next command to launch the cluster:
 
 ```bash
 MCC_LXC_LAUNCH_OPTS="-p HPCmD" mcc --verbose create --front-end-image local:HPCmD:0.1 --context-folder ./HPCmeetsDocker/ -n 2 -e -d home
 ```
 
-And now I have a cluster that consists of 2 computing nodes, with a shared home folder. The computing nodes have docker and slurm installed, and a single user called _ubuntu_ that is able to launch docker containers.
+And now we have a cluster that consists of 2 computing nodes, with a shared home folder. The computing nodes have docker and slurm installed, and a single user called _ubuntu_ that is able to launch docker containers.
 
 # Testing the cluster
+
+## Basic testing
+
+You can issue a command like this one, that runs a docker container on each of the two nodes. And the best of it is that Slurm managed the execution and allocation of nodes.
+
+```bash
+srun -N 2 docker run alpine sh -c 'hostname'
+```
 
 ## OpenFOAM
 
@@ -85,10 +95,6 @@ Then, as a user, we create a script named ```job.sh``` that we will use to run o
 
 ```bash
 #!/bin/bash
-#
-#SBATCH --ntasks=1
-#SBATCH --time=10:00
-#SBATCH --mem-per-cpu=1
 
 srun docker run --rm --entrypoint '/bin/bash' -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v /home/ubuntu:/home/openfoam -u $(id -u):$(id -g) openfoam/openfoam4-paraview50 -c '. /opt/openfoam4/etc/bashrc
 mkdir -p $FOAM_RUN 
@@ -103,10 +109,6 @@ If we had our folder with our OpenFOAM case, we could change that ```job.sh``` c
 
 ```bash
 #!/bin/bash
-#
-#SBATCH --ntasks=1
-#SBATCH --time=10:00
-#SBATCH --mem-per-cpu=1
 
 cd cavity
 srun docker run --rm --entrypoint '/bin/bash' -w "$(pwd)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v /home:/home -u $(id -u):$(id -g) openfoam/openfoam4-paraview50 -c '. /opt/openfoam4/etc/bashrc
@@ -126,9 +128,9 @@ sbatch job.sh
 
 First of all, you must ensure that you are able to run MPI. In order to make it, a basic set-up is included here:
 
-Installing OpenMPI:
+Installing MPICH:
 ```bash
-apt-get install -y openmpi-bin openssh-client openssh-server libopenmpi-dev python python-pip
+apt-get install -y mpich openssh-client openssh-server python python-pip
 pip install --upgrade pip mpi4py
 ```
 
