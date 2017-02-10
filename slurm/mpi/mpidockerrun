@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# HPCmeetsDocker - Integrating Docker containers with HPC batch queue systems
+# https://github.com/grycap/HPCmeetsDocker
+#
+# Copyright (C) GRyCAP - I3M - UPV
+# Developed by Carlos A. caralla@upv.es
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# This function exploits the ranges of the slurm hosts
+function get_nodes() {
+	local PARTITION BASENAME RANGES RANGE FIRST LAST i
+	for PARTITION in $SLURM_JOB_NODELIST; do
+		read BASENAME RANGES <<< "$(echo "$PARTITION" | sed 's/^\(.*\)\[\(.*\)\]$/\1 \2/')"
+		while read RANGE; do
+			if [ "$RANGE" != "" ]; then
+				IFS='-' read FIRST LAST <<< "$RANGE"
+				[ "$LAST" == "" ] && LAST=$FIRST
+				for ((i=$FIRST;i<=$LAST;i++)); do
+					echo "$BASENAME$i"
+				done
+			fi
+		done <<< "$(echo "$RANGES" | tr ',' '\n')"
+	done
+}
+
+# As we are launching the working nodes using the srun, only the first node will run this script
+if [ "$PMI_RANK" != "0" -a "$PMI_RANK" != "" ]; then
+	exit 0
+fi
+
+# The docker image to use
+DOCKER_IMAGE=ubuntu-mpich
+SLURM_JOBID=${SLURM_JOBID:-0}
+C_NAME="HPCmD-${SLURM_JOBID}"
+PARAMS="$@"
+DOCKERFLAGS="-w $(pwd) -v /home:/home -u $(id -u):$(id -g) -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro"
+
+# Prepare the list of hosts that are running in MPI
+S_HOSTS=
+for h in $(get_nodes); do
+  S_HOSTS="$S_HOSTS$h,"
+done
+
+# Launch the first node (which will coordinate the communication)
+docker run -id $DOCKERFLAGS -e MPIEXEC_PORT_RANGE=10000:10000 -p 10000 --expose=10000 -h "$SLURM_SUBMIT_HOST" --name "${C_NAME}.C" $DOCKER_IMAGE bash -c "mpiexec -host $S_HOSTS -launcher manual -n $SLURM_JOB_NUM_NODES $PARAMS | grep -v HYDRA_"
+
+# Get in which port Docker has mapped the communication port
+PORT=$(docker inspect -f "{{(index (index .NetworkSettings.Ports \"10000/tcp\") 0).HostPort}}" "${C_NAME}.C")
+
+# Launch the working nodes along with the daemon to communicate
+srun bash -c "docker run --rm $DOCKERFLAGS --add-host $SLURM_SUBMIT_HOST:\$SLURM_LAUNCH_NODE_IPADDR --name \"${C_NAME}.\$PMI_RANK\" $DOCKER_IMAGE /usr/bin/hydra_pmi_proxy --control-port $SLURM_SUBMIT_HOST:$PORT --rmk user --launcher manual --demux poll --pgid 0 --retries 10 --usize -2 --proxy-id \$PMI_RANK"
+
+# Show the results and finalize
+docker logs "${C_NAME}.C"
+docker rm $(docker stop "${C_NAME}.C") > /dev/null
+exit 0
