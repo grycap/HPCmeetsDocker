@@ -1,4 +1,8 @@
-# Create the HPCmeetsDocker image
+# HPCmeetsDocker
+
+Running HPC workloads using Docker.
+
+## Create the HPCmeetsDocker image
 
 First we get HPCmeetsDocker from git:
 
@@ -32,7 +36,7 @@ lxc stop HPCmD
 lxc publish HPCmD local: --alias HPCmD:0.1
 ```
 
-# Using with MCC
+## Using with MCC
 
 [MCC](https://github.com/grycap/mcc) is a tool that automates the process of creating virtual clusters whose nodes are containers. At this point, it is based on LXD. In order to test _HPCmeetsDocker_, we suggest to create a virtual cluster with _MCC_ prior to use it in production. Let's proceed.
 
@@ -72,9 +76,9 @@ MCC_LXC_LAUNCH_OPTS="-p HPCmD" mcc --verbose create --front-end-image local:HPCm
 
 And now we have a cluster that consists of 2 computing nodes, with a shared home folder. The computing nodes have docker and slurm installed, and a single user called _ubuntu_ that is able to launch docker containers.
 
-# Testing the cluster
+## Testing the cluster
 
-## Basic testing
+### Basic testing
 
 You can issue a command like this one, that runs a docker container on each of the two nodes. And the best of it is that Slurm managed the execution and allocation of nodes.
 
@@ -82,7 +86,7 @@ You can issue a command like this one, that runs a docker container on each of t
 srun -N 2 docker run alpine sh -c 'hostname'
 ```
 
-## OpenFOAM
+### OpenFOAM
 
 First grab the openfoam image (can be done as root or as any other user)
 
@@ -122,9 +126,9 @@ Then we could submit the job to slurm:
 sbatch job.sh
 ```
 
-# Using MPI
+## Using MPI
 
-## Ensuring that MPI is running
+### Ensuring that MPI is running
 
 First of all, you must ensure that you are able to run MPI. In order to make it, a basic set-up is included here:
 
