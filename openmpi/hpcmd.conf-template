@@ -1,0 +1,34 @@
+# HPCmeetsDocker - Integrating Docker containers with HPC batch queue systems
+# https://github.com/grycap/HPCmeetsDocker
+#
+# Copyright (C) GRyCAP - I3M - UPV
+# Developed by Carlos A. caralla@upv.es
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Default Docker image
+#   It can be selected a specific image using the env var HPCmD_DOCKERIMAGE. E.g.:
+#   $ HPCmD_DOCKERIMAGE=myimage mpirun -n 2 mpi_hello
+DEFAULT_DOCKERIMAGE=hpcmd-ubuntu-openmpi
+
+# Default overlay network to use
+#   It can be selected a specific network using the env var HPCmD_DOCKEROVERLAYNET. E.g.:
+#   $ HPCmD_DOCKEROVERLAYNET=myovernet mpirun -n 2 mpi_hello
+DEFAULT_DOCKEROVERLAYNET=HPCmD-overlay
+
+# Options to pass to Docker. It is suggested to map the home folder inside the containers,
+#   and the eventual scratch folders.
+#   REMEMBER: the syntax to make that folder FX from the physical host is available inside
+#       the container, in folder FY is: -v FX:FY
+DOCKEROPTS="-v /home:/home"

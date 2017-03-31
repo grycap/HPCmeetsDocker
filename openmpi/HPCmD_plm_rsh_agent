@@ -1,0 +1,56 @@
+#!/bin/bash
+# HPCmeetsDocker - Integrating Docker containers with HPC batch queue systems
+# https://github.com/grycap/HPCmeetsDocker
+#
+# Copyright (C) GRyCAP - I3M - UPV
+# Developed by Carlos A. caralla@upv.es
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+DEFAULT_DOCKERIMAGE=hpcmd-ubuntu-openmpi
+DEFAULT_DOCKEROVERLAYNET=HPCmD-overlay
+DOCKEROPTS="-v /home:/home"
+
+# The configuration file can modify the variables
+CONFIG_FILE=/etc/hpcmd/hpcmd.conf
+if [ -e "$CONFIG_FILE" ]; then
+        source "$CONFIG_FILE"
+fi
+
+# If the env variables have not been set, we use the values in the configuration
+HPCmD_DOCKERIMAGE=${HPCmD_DOCKERIMAGE:-$DEFAULT_DOCKERIMAGE}
+HPCmD_DOCKEROVERLAYNET=${HPCmD_DOCKEROVERLAYNET:-$DEFAULT_DOCKEROVERLAYNET}
+HPCmD_DOCKEROPTS=${HPCmD_DOCKEROPTS:-$DOCKEROPTS}
+
+# We build the docker options to map the folders
+DOCKER_OPTS="${HPCmD_DOCKEROPTS} -v /opt/HPCmeetsDocker/openmpi:/opt/HPCmeetsDocker/openmpi:ro -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -u $(id -u):$(id -g) -w $(pwd)"
+
+# Now the options to use only the eth0 in containers (the device connected to the overlay network)
+OMPI_OPTS="-mca oob_tcp_if_include eth0 -mca btl_tcp_if_include eth0"
+HOST=$1
+shift
+
+# If we have not set any docker image or docker overlay network, this command will fail
+if [ "$HPCmD_DOCKERIMAGE" == "" ]; then
+        echo "docker image not defined (check variable HPCmD_DOCKERIMAGE or DEFAULT_DOCKERIMAGE in the config file)" >&2
+        exit 1
+fi
+
+if [ "$HPCmD_DOCKEROVERLAYNET" == "" ]; then
+        echo "docker overlay network not defined (check variable HPCmD_DOCKEROVERLAYNET or DEFAULT_DOCKEROVERLAYNET in the config file)" >&2
+        exit 2
+fi
+
+# Finally, spawn the docker container and continue with OpenMPI
+ssh $HOST docker run $DOCKER_OPTS --rm --net $HPCmD_DOCKEROVERLAYNET $HPCmD_DOCKERIMAGE "$@" $OMPI_OPTS
