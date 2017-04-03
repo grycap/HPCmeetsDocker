@@ -1,0 +1,16 @@
+--- opal/mca/pmix/pmix112/pmix/include/pmix/pmix_common.h
++++ opal/mca/pmix/pmix112/pmix/include/pmix/pmix_common.h-patched
+@@ -51,7 +51,12 @@
+ #include <stdint.h>
+ #include <string.h>
+ #include <sys/time.h> /* for struct timeval */
+-
++#ifdef HAVE_UNISTD_H
++#include <unistd.h>
++#endif
++#ifdef HAVE_SYS_TYPE_H
++#include <sys/type.h>
++#endif
+ #include <pmix_version.h>
+
+ #if defined(c_plusplus) || defined(__cplusplus)
