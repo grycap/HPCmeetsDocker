@@ -1,4 +1,3 @@
-#
 # HPCmeetsDocker - Integrating Docker containers with HPC batch queue systems
 # https://github.com/grycap/HPCmeetsDocker
 #
@@ -17,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 FROM alpine
 # We need some patches to be able to compile OpenMPI 2.1 in Alpine
 COPY cma.h-patch pmix_common.h-patch /tmp/

@@ -28,6 +28,4 @@ RUN apt-get update && apt-get -y install python python-pip \
         openssh-server
 
 # Here we install the mpi4py runtime and a scientific library that we'll use to run the benchmarks
-RUN pip install --upgrade pip && pip install mpi4py numpy
-RUN apt-get install -y libblas3
-RUN apt-get install -y libgfortran3
+RUN pip install --upgrade pip && pip install mpi4py numpy && apt-get install -y libblas3 libgfortran3
