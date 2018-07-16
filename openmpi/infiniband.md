@@ -108,3 +108,7 @@ En estos momentos estoy lanzando pruebas que supuestamente utilizan IB (saca men
 ```bash
 mpirun --mca btl_openib_verbose 1 --mca btl ^tcp -n 2 mpitests-IMB-MPI1 PingPong
 ```
+
+```bash
+tests
+```
